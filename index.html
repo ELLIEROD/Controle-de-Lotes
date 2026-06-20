@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle de Lotes - Linha de Produção</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="img/favicon.ico" type="image/ico">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="watermark-background"></div>
+
+  <div class="container">
+    <h1>Controle de Lotes</h1>
+    <h2>Rastreabilidade de Insumos</h2>
+
+    <button class="btn-aba-retratil" onclick="toggleAbaAtualizacao()">⚙️ Abrir Menu / Atualizar Lotes</button>
+    
+    <div id="abaAtualizarLotes" class="bloco-painel painel-cadastro-retratil">
+      <p class="secao-titulo" style="background-color: #333;">⚙️ Atualizar Lotes</p>
+      
+      <div class="input-group">
+        <label for="regLinha">Linha:</label>
+        <select id="regLinha" onchange="atualizarProdutosCadastro()" style="grid-column: span 3; padding: 6px;">
+          <option value="Bolleria">Bolleria</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="regProduto">Produto:</label>
+        <select id="regProduto" onchange="preencherInputsComLoteSalvo()" style="grid-column: span 3; padding: 6px;">
+          </select>
+      </div>
+
+      <h4 style="margin: 10px 0 5px 0; text-align: left; color: #E31837;">Nova Embalagem:</h4>
+      <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+        <select id="embMes" style="padding: 6px; flex: 1;">
+          <option value="JAN">JAN</option><option value="FEV">FEV</option><option value="MAR">MAR</option>
+          <option value="ABR">ABR</option><option value="MAI">MAI</option><option value="JUN">JUN</option>
+          <option value="JUL">JUL</option><option value="AGO">AGO</option><option value="SET">SET</option>
+          <option value="OUT">OUT</option><option value="NOV">NOV</option><option value="DEZ">DEZ</option>
+        </select>
+        <input type="number" id="embNum" placeholder="Ex: 333" min="100" max="999" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" style="padding: 6px; flex: 1.5; text-align: center;">
+        <select id="embAno" style="padding: 6px; flex: 1;">
+          <option value="25">25</option>
+          <option value="26" selected>26</option>
+          <option value="27">27</option>
+        </select>
+        <button onclick="salvarLoteEmbalagem()" style="background-color: #E31837; margin: 0; padding: 6px 12px; font-size: 14px;">Salvar Emb</button>
+      </div>
+
+      <h4 style="margin: 10px 0 5px 0; text-align: left; color: #0071BC;">Novo Fitilho (Geral):</h4>
+      <div style="display: flex; gap: 5px;">
+        <select id="fitMes" style="padding: 6px; flex: 1;">
+          <option value="JAN">JAN</option><option value="FEV">FEV</option><option value="MAR">MAR</option>
+          <option value="ABR">ABR</option><option value="MAI">MAI</option><option value="JUN">JUN</option>
+          <option value="JUL">JUL</option><option value="AGO">AGO</option><option value="SET">SET</option>
+          <option value="OUT">OUT</option><option value="NOV">NOV</option><option value="DEZ">DEZ</option>
+        </select>
+        <input type="number" id="fitNum" placeholder="Ex: 102" min="100" max="999" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" style="padding: 6px; flex: 1.5; text-align: center;">
+        <select id="fitAno" style="padding: 6px; flex: 1;">
+          <option value="25">25</option>
+          <option value="26" selected>26</option>
+          <option value="27">27</option>
+        </select>
+        <button onclick="salvarLoteFitilho()" style="background-color: #0071BC; margin: 0; padding: 6px 12px; font-size: 14px;">Salvar Fit</button>
+      </div>
+    </div>
+
+
+    <div class="bloco-painel" style="margin-top: 35px;">
+      <p class="secao-titulo">📺 Painel de Consulta (Lote Ativo)</p>
+      
+      <div class="input-group">
+        <label for="selecaoConsulta">Produto:</label>
+        <select id="selecaoConsulta" onchange="carregarDadosNoPainel()" style="grid-column: span 3; padding: 8px; font-weight: bold;">
+          </select>
+      </div>
+
+      <hr style="border: 1px dashed #0071BC; margin: 15px 0;">
+
+      <div>
+        <h3 id="viewNomeProduto" style="margin: 5px 0; color: #000;">-</h3>
+        <span id="viewCodigoProduto" style="background: #333; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 13px;">Código: ------</span>
+        
+        <div class="produto-imagem-circulo">
+          <img id="viewImagemProduto" src="img/produtos/default.png" alt="Produto">
+        </div>
+      </div>
+
+      <div class="card-lote-individual" style="border-left: 5px solid #E31837;">
+        <span style="font-size: 14px; font-weight: bold; color: #333;">📦 LOTE DA EMBALAGEM</span>
+        <div id="viewLoteEmbalagem" class="lote-destaque">--- ---/--</div>
+        <div id="viewDataEmbalagem" class="data-atualizacao">Atualizado em: --/--/----</div>
+      </div>
+
+      <div class="card-lote-individual" style="border-left: 5px solid #0071BC;">
+        <span style="font-size: 14px; font-weight: bold; color: #333;">🎗️ LOTE DO FITILHO</span>
+        <div id="viewLoteFitilho" class="lote-destaque">--- ---/--</div>
+        <div id="viewDataFitilho" class="data-atualizacao">Atualizado em: --/--/----</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="logo-container"><div class="assinatura">Created by Ellie Rod <br> • ID 50000833</div></div>
+  <div class="relogio-digital" id="relogioEsquerda">🕒 <span id="horaEsquerda"></span></div>
+  <div class="aba-data" id="abaData">📅 <span id="dataHojeCompacta"></span>
+    <div class="painel-claves"><p><strong>Data Atual:</strong> <span id="dataAtual"></span></p></div>
+  </div>
+  <div class="relogio-digital invertido" id="relogioDireita">🕒 <span id="horaDireita"></span></div>
+  <button id="toggleDarkMode" class="dark-toggle">🌙</button>
+  <div id="darkOverlay"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
