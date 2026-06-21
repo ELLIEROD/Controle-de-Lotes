@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.ellierod.twa",
+        "sha256_cert_fingerprints": ["66:C0:2E:72:AE:DB:7B:63:66:B7:8A:A1:10:83:E1:1C:DC:CC:78:EF:72:5F:AF:42:9C:98:1C:ED:6B:54:1E:34"]
+      }
+    }]
