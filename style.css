@@ -34,7 +34,6 @@ body {
   z-index: 0;
 }
 
-/* MODIFICADO: Caixa ampliada para preencher melhor o centro do monitor */
 .container {
   background-color: #F0E68C;
   padding: 30px;
@@ -43,7 +42,7 @@ body {
   text-align: center;
   z-index: 1;
   position: relative;
-  max-width: 540px; /* Era 460px */
+  max-width: 540px;
   width: 100%;
   min-width: 340px;
 }
@@ -137,6 +136,7 @@ button:active { transform: scale(0.98); }
 .relogio-digital#relogioDireita { right: 15px; }
 .relogio-digital.invertido { background-color: #fff; color: #0071BC; }
 
+/* Aba da Esquerda (Datas e Prazos) */
 .aba-data {
   position: fixed;
   top: 70px;
@@ -149,7 +149,9 @@ button:active { transform: scale(0.98); }
   font-weight: bold;
   cursor: pointer;
   z-index: 1001;
+  transition: all 0.3s ease;
   font-family: monospace;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .painel-claves {
@@ -162,21 +164,116 @@ button:active { transform: scale(0.98); }
   padding: 15px;
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
-  min-width: 220px;
+  min-width: 230px;
   z-index: 1002;
   font-size: 14px;
   text-align: left;
 }
 
-.aba-data:hover .painel-claves { display: block; }
+.aba-data:hover .painel-claves,
+.aba-data.expandida .painel-claves {
+  display: block;
+}
+
+.painel-claves label {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.painel-claves label:first-child { margin-top: 0; }
+
+.painel-claves select {
+  width: 100%;
+  margin: 4px 0 10px 0;
+  padding: 6px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+/* Aba da Direita (Cálculo de Lote do Painel de Impressão) */
+.aba-lote {
+  position: fixed;
+  top: 70px;
+  right: 15px;
+  background-color: #F0E68C;
+  color: #000;
+  padding: 8px 12px;
+  font-size: 15px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.painel-lote {
+  display: none;
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  min-width: 260px;
+  color: #333;
+  text-align: left;
+}
+
+.aba-lote:hover .painel-lote,
+.aba-lote.expandida .painel-lote {
+  display: block;
+}
+
+.painel-lote label {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.painel-lote select {
+  width: 100%;
+  padding: 5px;
+  margin-top: 4px;
+}
+
+/* Visual do Lote Estilo Datador Industrial (Inkjet) */
+.visualizacao-lote {
+  background: #222; /* Fundo escuro para destacar o datador */
+  color: #00FF66;  /* Cor verde industrial neon */
+  padding: 12px;
+  margin-top: 15px;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+  border: 2px solid #333;
+}
+
+.lote-linhas {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.loteRetiradaGrande,
+.loteEnvioGrande {
+  font-size: 14px;
+  font-weight: bold;
+  border-left: 1px solid #555;
+  padding-left: 10px;
+}
 
 /* ==========================================================================
-   3. NOVO DESIGN: ABAS RETRÁTEIS E ELEMENTOS DE LOTE
+   3. NOVO DESIGN: ABAS RETRÁTEIS E ELEMENTOS DE LOTE (FIREBASE)
    ========================================================================== */
-
-/* Botão principal que abre/fecha a aba de cima */
 .btn-aba-retratil {
   background-color: #333;
+  color: #fff;
   width: 100%;
   margin: 10px 0 0 0;
   padding: 12px;
@@ -184,20 +281,18 @@ button:active { transform: scale(0.98); }
   font-size: 15px;
 }
 
-/* NOVO: Classe da aba de atualização com efeito de recolhimento */
 .painel-cadastro-retratil {
   max-height: 0;
   overflow: hidden;
-  padding: 0 18px; /* Controlado dinamicamente no JS */
+  padding: 0 18px;
   margin: 0;
   opacity: 0;
   border: none;
   transition: max-height 0.4s ease-out, opacity 0.3s ease, padding 0.4s ease, margin 0.4s;
 }
 
-/* Classe ativada via JS quando o menu é aberto */
 .painel-cadastro-retratil.aberto {
-  max-height: 400px; /* Altura limite para o conteúdo expandir */
+  max-height: 450px;
   opacity: 1;
   margin-top: 15px;
   padding: 18px;
@@ -291,7 +386,7 @@ button:active { transform: scale(0.98); }
 }
 
 /* ==========================================================================
-   4. DARK MODE
+   4. DARK MODE E INFRAESTRUTURA DE CORREÇÕES
    ========================================================================== */
 .dark-toggle {
   position: fixed;
@@ -305,7 +400,11 @@ button:active { transform: scale(0.98); }
   font-size: 18px;
   cursor: pointer;
   z-index: 1001;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: background 0.3s;
 }
+
+.dark-toggle:hover { background: #555; }
 
 #darkOverlay {
   position: fixed;
@@ -315,11 +414,17 @@ button:active { transform: scale(0.98); }
   transition: opacity 0.4s ease;
 }
 
-body.dark-mode #darkOverlay { opacity: 0.65; }
+body.dark-mode #darkOverlay {
+  opacity: 0.65;
+}
 
-body.dark-mode .bloco-painel {
-  background: rgba(30, 30, 30, 0.94);
+/* Regras Dark Mode aplicadas aos painéis normais e retráteis */
+body.dark-mode .bloco-painel,
+body.dark-mode .painel-claves,
+body.dark-mode .painel-lote {
+  background: rgba(30, 30, 30, 0.96);
   border-color: #fff;
+  color: #fff;
 }
 
 body.dark-mode .painel-cadastro-retratil.aberto {
@@ -328,6 +433,8 @@ body.dark-mode .painel-cadastro-retratil.aberto {
 
 body.dark-mode .bloco-painel h3,
 body.dark-mode .bloco-painel h4,
+body.dark-mode .painel-claves label,
+body.dark-mode .painel-lote label,
 body.dark-mode .card-lote-individual span {
   color: #fff !important;
 }
@@ -345,8 +452,25 @@ body.dark-mode .lote-destaque { color: #ff4d6d; }
 body.dark-mode .data-atualizacao { color: #bbb; }
 
 body.dark-mode .bloco-painel input,
-body.dark-mode .bloco-painel select {
+body.dark-mode .bloco-painel select,
+body.dark-mode .painel-claves select,
+body.dark-mode .painel-lote select {
   background-color: #444;
   color: #fff;
   border-color: #666;
+}
+
+/* ==========================================================================
+   5. RESPONSIVIDADE E ADAPTAÇÃO MOBILE
+   ========================================================================== */
+@media (max-width: 768px) {
+  .aba-lote {
+    top: 120px; /* Evita que as abas se sobreponham em telas estreitas */
+    right: 15px;
+    font-size: 14px;
+  }
+  .input-group {
+    grid-template-columns: 1fr; /* Quebra em colunas únicas nos smartphones */
+    gap: 5px;
+  }
 }

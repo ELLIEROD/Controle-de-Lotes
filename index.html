@@ -30,7 +30,7 @@
       <div class="input-group">
         <label for="regProduto">Produto:</label>
         <select id="regProduto" onchange="preencherInputsComLoteSalvo()" style="grid-column: span 3; padding: 6px;">
-          </select>
+        </select>
       </div>
 
       <h4 style="margin: 10px 0 5px 0; text-align: left; color: #E31837;">Nova Embalagem:</h4>
@@ -64,7 +64,7 @@
         </select>
         <input type="number" id="fitNum" placeholder="Ex: 102" min="100" max="999" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" style="padding: 6px; flex: 1.5; text-align: center;">
         <select id="fitAno" style="padding: 6px; flex: 1;">
-           <option value="24">24</option>
+          <option value="24">24</option>
           <option value="25">25</option>
           <option value="26" selected>26</option>
           <option value="27">27</option>
@@ -76,14 +76,13 @@
       </div>
     </div>
 
-
     <div class="bloco-painel" style="margin-top: 35px;">
       <p class="secao-titulo">📺 Painel de Consulta (Lote Ativo)</p>
       
       <div class="input-group">
         <label for="selecaoConsulta">Produto:</label>
         <select id="selecaoConsulta" onchange="carregarDadosNoPainel()" style="grid-column: span 3; padding: 8px; font-weight: bold;">
-          </select>
+        </select>
       </div>
 
       <hr style="border: 1px dashed #0071BC; margin: 15px 0;">
@@ -109,18 +108,94 @@
         <div id="viewDataFitilho" class="data-atualizacao">Atualizado em: --/--/----</div>
       </div>
     </div>
-
   </div>
 
-  <div class="logo-container"><div class="assinatura">Created by Ellie Rod <br> • ID 50000833</div></div>
-  <div class="relogio-digital" id="relogioEsquerda">🕒 <span id="horaEsquerda"></span></div>
-  <div class="aba-data" id="abaData">📅 <span id="dataHojeCompacta"></span>
-    <div class="painel-claves"><p><strong>Data Atual:</strong> <span id="dataAtual"></span></p></div>
+  <div class="logo-container">
+    <div class="assinatura">Created by Ellie Rod <br> • ID 50000833</div>
   </div>
-  <div class="relogio-digital invertido" id="relogioDireita">🕒 <span id="horaDireita"></span></div>
+
+  <div class="relogio-digital" id="relogioEsquerda">
+    🕒 <span id="horaEsquerda"></span>
+  </div>
+
+  <div class="aba-data" id="abaData">
+    📅 <span id="dataHojeCompacta"></span>
+    <div class="painel-claves" id="painelClaves">
+      <label for="seletorLinha"><strong>Linha:</strong></label>
+      <select id="seletorLinha">
+        <option value="linha20k">Linha 4 - 20k</option>
+        <option value="linha3">Linha 3</option>
+        <option value="bolleria">Linha 1 - Bolleria</option>
+      </select>
+
+      <label for="seletorProduto"><strong>Produto:</strong></label>
+      <select id="seletorProduto"></select>
+
+      <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+      <p><strong>Data Atual:</strong> <span id="dataAtual"></span></p>
+      <p><strong>Data Juliano:</strong> <span id="dataJuliana"></span></p>
+      <p><strong>Validade:</strong> <span id="dataValidade"></span></p>
+      <p><strong>Retirada:</strong> <span id="dataRetirada"></span></p>
+      <p><strong>Envio:</strong> <span id="dataEnvio"></span></p>
+    </div>
+  </div>
+
+  <div class="aba-lote" id="abaLote">
+    🏷️ Comparar Lote
+    <div class="painel-lote" id="painelLoteContent">
+      <label><strong>Unidade:</strong></label>
+      <select id="seletorUnidade">
+        <option value="SP2">SP2 - Mogi</option>
+      </select>
+
+      <label><strong>Máquina:</strong></label>
+      <select id="seletorMaquina"></select>
+
+      <div class="visualizacao-lote">
+        <div class="lote-linhas">
+          <div id="loteLinhaSuperior">VAL 00 MMM 00</div>
+          <div id="loteLinhaInferior">LSP200000000</div>
+        </div>
+        <div class="LotesRetiradas">
+          <div id="loteRetiradaGrande">0000</div>
+          <div id="loteEnvioGrande">0000</div>
+        </div>
+      </div>
+      <p style="font-size: 10px; margin-top: 10px; color: #666;">* Atualiza automaticamente conforme o produto selecionado na esquerda.</p>
+    </div>
+  </div>
+
+  <div class="relogio-digital invertido" id="relogioDireita">
+    🕒 <span id="horaDireita"></span>
+  </div>
+
   <button id="toggleDarkMode" class="dark-toggle">🌙</button>
   <div id="darkOverlay"></div>
 
+  <!-- Conexão Global Prévia com o Firebase Realtime Database antes do Script Principal -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ9acBzgdvyszKR0B3imwhvW3P7d06mEQ",
+      authDomain: "controle-lotes-3e137.firebaseapp.com",
+      databaseURL: "https://controle-lotes-3e137-default-rtdb.firebaseio.com",
+      projectId: "controle-lotes-3e137",
+      storageBucket: "controle-lotes-3e137.firebasestorage.app",
+      messagingSenderId: "427198534626",
+      appId: "1:427198534626:web:d41828fa9da1923f089fbb",
+      measurementId: "G-1LQH57MP5V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Disponibiliza as ferramentas do Firebase no escopo global para o script.js usar livremente
+    window.fbObject = { db, ref, set, get, onValue };
+  </script>
+
+  <!-- O seu script de lógica principal -->
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "lotes-cache-v1";
+const CACHE_NAME = "lotes-cache-v2";
 
 // Lista de arquivos essenciais salvos na memória local do dispositivo (Offline)
 const FILES_TO_CACHE = [
@@ -48,9 +48,27 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
+/* ==========================================================================
+   ESTRATÉGIA DE FETCH COMPATÍVEL COM FIREBASE
+   ========================================================================== */
 self.addEventListener("fetch", event => {
+  // Ignora requisições que não sejam do método GET (ex: POST do Firebase Auth/Database)
+  if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+
+  // Ignora chamadas diretas para a API do Firebase ou conexões WebSocket da nuvem
+  if (
+    url.hostname.includes("firebase") || 
+    url.hostname.includes("googleapis") || 
+    url.hostname.includes("gstatic")
+  ) {
+    return; // Deixa passar direto pela rede sem interceptar no cache
+  }
+
   event.respondWith(
     caches.match(event.request).then(response => {
+      // Se estiver no cache local, entrega na hora. Senão, busca na rede.
       return response || fetch(event.request);
     })
   );
