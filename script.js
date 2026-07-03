@@ -6,8 +6,8 @@ const dadosProducao = {
     nome: "Linha 20k",
     produtos: {
       "pppi": { label: "PP e PI", validade: 50, retirada: 35, envio: 10 },
-      "artesanos": { label: "Artesanos", validade: 35, retirada: 23, envio: 09 },
-      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 00 }
+      "artesanos": { label: "Artesanos", validade: 35, retirada: 23, envio: 9 },
+      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 0 }
     }
   },
   "linha3": {
@@ -15,15 +15,15 @@ const dadosProducao = {
     produtos: {
       "paesEspeciais": { label: "Pães Especiais", validade: 35, retirada: 23, envio: 10 }, 
       "paesintegraise12graos": { label: "Pão Integral Zero e 12 Grãos 350g", validade: 28, retirada: 19, envio: 10 },
-      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 00 }
+      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 0 }
     }
   },
   "bolleria": {
     nome: "Bolleria",
     produtos: {
       "brioche": { label: "Brioche", validade: 60, retirada: 45, envio: 15 }, 
-      "artesanos": { label: "Artesanos", validade: 35, retirada: 23, envio: 09 },
-      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 00 }
+      "artesanos": { label: "Artesanos", validade: 35, retirada: 23, envio: 9 },
+      "aparas": { label: "Aparas", validade: 15, retirada: 12, envio: 0 }
     }
   }
 };
@@ -37,29 +37,7 @@ const maquinasPorLinha = {
 const mesesAbrev = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
 /* ===========================================================
-   ELEMENTOS DO DOM
-   =========================================================== */
-const seletorLinha = document.getElementById("seletorLinha");
-const seletorProduto = document.getElementById("seletorProduto");
-const seletorMaquina = document.getElementById("seletorMaquina");
-const seletorUnidade = document.getElementById("seletorUnidade");
-
-const dataHojeCompacta = document.getElementById("dataHojeCompacta");
-const dataJulianaSpan = document.getElementById("dataJuliana");
-const dataValidadeSpan = document.getElementById("dataValidade");
-const dataRetiradaSpan = document.getElementById("dataRetirada");
-const dataEnvioSpan = document.getElementById("dataEnvio");
-
-const loteLinhaSuperior = document.getElementById("loteLinhaSuperior");
-const loteLinhaInferior = document.getElementById("loteLinhaInferior");
-const loteRetiradaGrande = document.getElementById("loteRetiradaGrande");
-const loteEnvioGrande = document.getElementById("loteEnvioGrande");
-
-const abaData = document.getElementById("abaData");
-const abaLote = document.getElementById("abaLote");
-
-/* ===========================================================
-   CENTRAL LOTES (BANCO DE PRODUTOS)
+   CENTRAL LOTES (BANCO DE PRODUTOS FIREBASE)
    =========================================================== */
 const bancoProdutos = {
   "Bolleria": [
@@ -74,16 +52,226 @@ const bancoProdutos = {
   ]
 };
 
-// Variáveis para armazenar listeners ativos do Firebase (evita loops)
+// Variáveis de controle globais e escuta do Firebase
 let unsubscribeLoteProduto = null;
 let unsubscribeFitilho = null;
+let diaAtualNaMemoria = new Date().getDate();
 
+/* ===========================================================
+   INICIALIZAÇÃO DO SISTEMA (DOM COMPLETAMENTE CARREGADO)
+   =========================================================== */
 document.addEventListener("DOMContentLoaded", () => {
   inicializarComponentesGerais();
   popularSeletoresEstrategicos();
-  escutarLoteFitilhoTempoReal(); // Começa a ouvir o fitilho global imediatamente
+  configurarEventosAbasLaterais();
+  
+  // Executa os primeiros cálculos de lote locais das abas se os seletores existirem
+  const seletorLinha = document.getElementById("seletorLinha");
+  if (seletorLinha) {
+    popularSelectProdutos();
+  }
+  
+  // Inicializa escuta do fitilho remoto imediatamente se o Firebase estiver pronto
+  escutarLoteFitilhoTempoReal(); 
 });
 
+function inicializarComponentesGerais() {
+  // Relógio Digital Unificado
+  setInterval(atualizarRelogio, 1000);
+  atualizarRelogio();
+
+  // Configuração inicial das datas de exibição
+  const hoje = new Date();
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+  const dataFormatada = hoje.toLocaleDateString('pt-BR', options);
+  
+  const dataHojeCompacta = document.getElementById("dataHojeCompacta");
+  const dataAtual = document.getElementById("dataAtual");
+  if (dataHojeCompacta) dataHojeCompacta.textContent = dataFormatada.substring(0, 5);
+  if (dataAtual) dataAtual.textContent = dataFormatada;
+
+  // Dark Mode Switcher Unificado
+  const btnDark = document.getElementById("toggleDarkMode");
+  if (btnDark) {
+    btnDark.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+    });
+  }
+}
+
+/* ===========================================================
+   LÓGICA INTERNA DAS ABAS LATERAIS (CÁLCULO E EVENTOS DE ENTRADA)
+   =========================================================== */
+function configurarEventosAbasLaterais() {
+  const seletorLinha = document.getElementById("seletorLinha");
+  const seletorProduto = document.getElementById("seletorProduto");
+  const seletorMaquina = document.getElementById("seletorMaquina");
+  const seletorUnidade = document.getElementById("seletorUnidade");
+  const abaData = document.getElementById("abaData");
+  const abaLote = document.getElementById("abaLote");
+
+  if (seletorLinha) seletorLinha.addEventListener("change", popularSelectProdutos);
+  if (seletorProduto) seletorProduto.addEventListener("change", atualizarCalculosDatas);
+  if (seletorMaquina) seletorMaquina.addEventListener("change", gerarStringLote);
+  if (seletorUnidade) seletorUnidade.addEventListener("change", gerarStringLote);
+
+  // Controle de clique seguro (ignora cliques em selects/options para não fechar a aba)
+  if (abaData) {
+    abaData.addEventListener("click", (e) => {
+      if (['SELECT', 'OPTION', 'LABEL', 'INPUT'].includes(e.target.tagName)) return;
+      abaData.classList.toggle("expandida");
+    });
+  }
+
+  if (abaLote) {
+    abaLote.addEventListener("click", (e) => {
+      if (['SELECT', 'OPTION', 'LABEL', 'INPUT'].includes(e.target.tagName)) return;
+      abaLote.classList.toggle("expandida");
+      if (abaLote.classList.contains("expandida")) gerarStringLote();
+    });
+  }
+}
+
+function popularSelectProdutos() {
+    const seletorLinha = document.getElementById("seletorLinha");
+    const seletorProduto = document.getElementById("seletorProduto");
+    if (!seletorLinha || !seletorProduto) return;
+
+    const linha = seletorLinha.value;
+    const prods = dadosProducao[linha].produtos;
+    seletorProduto.innerHTML = "";
+    
+    for (let chave in prods) {
+        let opt = document.createElement("option");
+        opt.value = chave; 
+        opt.textContent = prods[chave].label;
+        seletorProduto.appendChild(opt);
+    }
+    atualizarMaquinas();
+    atualizarCalculosDatas();
+}
+
+function atualizarMaquinas() {
+    const seletorLinha = document.getElementById("seletorLinha");
+    const seletorMaquina = document.getElementById("seletorMaquina");
+    if (!seletorLinha || !seletorMaquina) return;
+
+    const linha = seletorLinha.value;
+    seletorMaquina.innerHTML = "";
+    maquinasPorLinha[linha].forEach(m => {
+        let opt = document.createElement("option");
+        opt.value = m; 
+        opt.textContent = `Máquina ${m}`;
+        seletorMaquina.appendChild(opt);
+    });
+    gerarStringLote();
+}
+
+function calcularDiaJuliano(data) {
+    const inicio = new Date(data.getFullYear(), 0, 0);
+    const diff = data - inicio;
+    return Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(3, '0');
+}
+
+function atualizarCalculosDatas() {
+    const hoje = new Date();
+    const seletorLinha = document.getElementById("seletorLinha");
+    const seletorProduto = document.getElementById("seletorProduto");
+    if (!seletorLinha || !seletorProduto) return;
+
+    const linhaVal = seletorLinha.value;
+    const prodVal = seletorProduto.value;
+    
+    if (!dadosProducao[linhaVal]?.produtos[prodVal]) return;
+    const info = dadosProducao[linhaVal].produtos[prodVal];
+
+    const dataJulianaSpan = document.getElementById("dataJuliana");
+    const julianaFormatada = calcularDiaJuliano(hoje);
+    if (dataJulianaSpan) dataJulianaSpan.textContent = julianaFormatada;
+
+    const dVal = new Date(hoje); dVal.setDate(hoje.getDate() + info.validade);
+    const dRet = new Date(hoje); dRet.setDate(hoje.getDate() + info.retirada);
+    const dEnv = new Date(hoje); dEnv.setDate(hoje.getDate() + info.envio); 
+    
+    const dataHojeCompacta = document.getElementById("dataHojeCompacta");
+    const dataAtual = document.getElementById("dataAtual");
+    const dataValidadeSpan = document.getElementById("dataValidade");
+    const dataRetiradaSpan = document.getElementById("dataRetirada");
+    const dataEnvioSpan = document.getElementById("dataEnvio");
+
+    if (dataHojeCompacta) dataHojeCompacta.textContent = hoje.toLocaleDateString("pt-BR");
+    if (dataAtual) dataAtual.textContent = hoje.toLocaleDateString("pt-BR");
+    if (dataValidadeSpan) dataValidadeSpan.textContent = dVal.toLocaleDateString("pt-BR");
+    if (dataRetiradaSpan) dataRetiradaSpan.textContent = dRet.getDate().toString().padStart(2, '0') + " " + String(dRet.getMonth()+1).padStart(2, '0');
+    if (dataEnvioSpan) dataEnvioSpan.textContent = dEnv.getDate().toString().padStart(2, '0') + " " + String(dEnv.getMonth()+1).padStart(2, '0');
+    
+    gerarStringLote();
+}
+
+function gerarStringLote() {
+    const hoje = new Date();
+    const seletorLinha = document.getElementById("seletorLinha");
+    const seletorProduto = document.getElementById("seletorProduto");
+    const seletorUnidade = document.getElementById("seletorUnidade");
+    const seletorMaquina = document.getElementById("seletorMaquina");
+
+    if (!seletorLinha || !seletorProduto || !seletorUnidade || !seletorMaquina) return;
+
+    const linhaVal = seletorLinha.value;
+    const prodVal = seletorProduto.value;
+    const unidade = seletorUnidade.value;
+    const maq = seletorMaquina.value;
+    
+    if (!dadosProducao[linhaVal]?.produtos[prodVal]) return;
+
+    const info = dadosProducao[linhaVal].produtos[prodVal];
+    const dVal = new Date(hoje); dVal.setDate(hoje.getDate() + info.validade);
+
+    const strVal = `VAL ${dVal.getDate().toString().padStart(2, '0')} ${mesesAbrev[dVal.getMonth()]} ${dVal.getFullYear().toString().slice(-2)}`;
+    const numLinha = linhaVal === "linha20k" ? "4" : (linhaVal === "linha3" ? "3" : "1");
+    
+    const juliana = calcularDiaJuliano(hoje); 
+    const hora = hoje.getHours().toString().padStart(2, '0') + hoje.getMinutes().toString().padStart(2, '0');
+    const strLote = `L${unidade}${numLinha}${juliana}${hora}${maq}`;
+
+    const dRet = new Date(hoje); dRet.setDate(hoje.getDate() + info.retirada);
+    const strRetiradaGrande = `DR ${dRet.getDate().toString().padStart(2, '0')}${String(dRet.getMonth()+1).padStart(2, '0')}`;
+    
+    const dEnv = new Date(hoje); dEnv.setDate(hoje.getDate() + info.envio);
+    const strEnvioGrande = `DE ${dEnv.getDate().toString().padStart(2, '0')}${String(dEnv.getMonth()+1).padStart(2, '0')}`;
+
+    const loteLinhaSuperior = document.getElementById("loteLinhaSuperior");
+    const loteLinhaInferior = document.getElementById("loteLinhaInferior");
+    const loteRetiradaGrande = document.getElementById("loteRetiradaGrande");
+    const loteEnvioGrande = document.getElementById("loteEnvioGrande");
+
+    if (loteLinhaSuperior) loteLinhaSuperior.textContent = strVal;
+    if (loteLinhaInferior) loteLinhaInferior.textContent = strLote;
+    if (loteRetiradaGrande) loteRetiradaGrande.textContent = strRetiradaGrande;
+    if (loteEnvioGrande) loteEnvioGrande.textContent = strEnvioGrande;
+}
+
+function atualizarRelogio() {
+    const agora = new Date();
+    const h = agora.toLocaleTimeString("pt-BR");
+    const hEsquerda = document.getElementById("horaEsquerda");
+    const hDireita = document.getElementById("horaDireita");
+
+    if (hEsquerda) hEsquerda.textContent = h;
+    if (hDireita) hDireita.textContent = h;
+    
+    if (agora.getDate() !== diaAtualNaMemoria) {
+        diaAtualNaMemoria = agora.getDate(); 
+        atualizarCalculosDatas(); 
+    }   
+    else if (agora.getSeconds() === 0) {
+        gerarStringLote(); 
+    }
+}
+
+/* ===========================================================
+   CENTRAL DE ATUALIZAÇÕES E SINCRONISMO (FIREBASE)
+   =========================================================== */
 function toggleAbaAtualizacao() {
   const aba = document.getElementById("abaAtualizarLotes");
   if (aba) aba.classList.toggle("aberto");
@@ -121,46 +309,44 @@ function atualizarProdutosCadastro() {
       selectRegProduto.appendChild(opt);
     });
   }
-  
-  // Sincroniza o painel de consulta e inicia escuta em tempo real do novo produto
   configurarEscutaTempoRealPainel();
 }
 
-// Interliga a seleção de cadastro e consulta para puxar os dados em tempo real da nuvem
 function configurarEscutaTempoRealPainel() {
-  const codigoProd = document.getElementById("regProduto").value;
+  const regProdElem = document.getElementById("regProduto");
+  if (!regProdElem) return;
+  
+  const codigoProd = regProdElem.value;
   const selectConsulta = document.getElementById("selecaoConsulta");
   
   if (selectConsulta && selectConsulta.value !== codigoProd) {
     selectConsulta.value = codigoProd;
   }
 
-  // Cancela a escuta do produto anterior se ela existir
   if (unsubscribeLoteProduto) unsubscribeLoteProduto();
 
   if (!window.fbObject) return;
   const { db, ref, onValue } = window.fbObject;
 
-  // Escuta alterações do lote de embalagem específico deste produto na nuvem
   unsubscribeLoteProduto = onValue(ref(db, `embalagens/${codigoProd}`), (snapshot) => {
     const dados = snapshot.val();
+    const embMes = document.getElementById("embMes");
+    const embNum = document.getElementById("embNum");
+    const embAno = document.getElementById("embAno");
     
-    // Atualiza os inputs do menu de atualização se houver dados
     if (dados && dados.lote) {
       const partes = dados.lote.split(" ");
-      if (partes.length === 2) {
-        document.getElementById("embMes").value = partes[0];
+      if (partes.length === 2 && embMes && embNum && embAno) {
+        embMes.value = partes[0];
         const subPartes = partes[1].split("/");
         if (subPartes.length === 2) {
-          document.getElementById("embNum").value = subPartes[0];
-          document.getElementById("embAno").value = subPartes[1];
+          embNum.value = subPartes[0];
+          embAno.value = subPartes[1];
         }
       }
     } else {
-      document.getElementById("embNum").value = "";
+      if (embNum) embNum.value = "";
     }
-    
-    // Atualiza visualmente o painel principal de exibição
     carregarDadosNoPainel();
   });
 }
@@ -171,23 +357,25 @@ function escutarLoteFitilhoTempoReal() {
 
   if (unsubscribeFitilho) unsubscribeFitilho();
 
-  // Escuta alterações no lote geral do fitilho na nuvem
   unsubscribeFitilho = onValue(ref(db, "fitilho"), (snapshot) => {
     const dados = snapshot.val();
+    const fitMes = document.getElementById("fitMes");
+    const fitNum = document.getElementById("fitNum");
+    const fitAno = document.getElementById("fitAno");
+
     if (dados && dados.lote) {
       const partesFit = dados.lote.split(" ");
-      if (partesFit.length === 2) {
-        document.getElementById("fitMes").value = partesFit[0];
+      if (partesFit.length === 2 && fitMes && fitNum && fitAno) {
+        fitMes.value = partesFit[0];
         const subPartesFit = partesFit[1].split("/");
         if (subPartesFit.length === 2) {
-          document.getElementById("fitNum").value = subPartesFit[0];
-          document.getElementById("fitAno").value = subPartesFit[1];
+          fitNum.value = subPartesFit[0];
+          fitAno.value = subPartesFit[1];
         }
       }
     } else {
-      document.getElementById("fitNum").value = "";
+      if (fitNum) fitNum.value = "";
     }
-    
     carregarDadosNoPainel();
   });
 }
@@ -200,9 +388,6 @@ function obterDataAtualFormatada() {
   return `${dia}/${mes}/${ano}`;
 }
 
-/* ===========================================================
-   GRAVAÇÃO DE DADOS NO FIREBASE REALTIME DATABASE
-   =========================================================== */
 function salvarLoteEmbalagem() {
   if (!window.fbObject) return alert("Firebase não carregado!");
   const { db, ref, set } = window.fbObject;
@@ -220,7 +405,6 @@ function salvarLoteEmbalagem() {
   const loteFormatado = `${mes} ${num}/${ano}`;
   const dataAtual = obterDataAtualFormatada();
 
-  // Salva no caminho exato da nuvem por código de produto
   set(ref(db, `embalagens/${codigoProd}`), {
     lote: loteFormatado,
     data: dataAtual
@@ -245,7 +429,6 @@ function salvarLoteFitilho() {
   const loteFormatado = `${mes} ${num}/${ano}`;
   const dataAtual = obterDataAtualFormatada();
 
-  // Salva no nó global de fitilho na nuvem
   set(ref(db, "fitilho"), {
     lote: loteFormatado,
     data: dataAtual
@@ -280,7 +463,6 @@ function carregarDadosNoPainel() {
   if (!window.fbObject) return;
   const { db, ref, get } = window.fbObject;
 
-  // Busca do Firebase para renderizar no painel ativo
   get(ref(db, `embalagens/${produtoAchado.codigo}`)).then((snapshot) => {
     const dados = snapshot.val();
     document.getElementById("viewLoteEmbalagem").textContent = dados ? dados.lote : "SEM LOTE GRAVADO";
@@ -295,171 +477,10 @@ function carregarDadosNoPainel() {
 }
 
 function preencherInputsComLoteSalvo() {
-  // Vincula a seleção da consulta e reconfigura o monitoramento instantâneo
   configurarEscutaTempoRealPainel();
 }
 
-function inicializarComponentesGerais() {
-  setInterval(() => {
-    const agora = new Date();
-    const txtHora = agora.toLocaleTimeString('pt-BR');
-    if(document.getElementById("horaEsquerda")) document.getElementById("horaEsquerda").textContent = txtHora;
-    if(document.getElementById("horaDireita")) document.getElementById("horaDireita").textContent = txtHora;
-  }, 1000);
-
-  const hoje = new Date();
-  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-  const dataFormatada = hoje.toLocaleDateString('pt-BR', options);
-  if(dataHojeCompacta) dataHojeCompacta.textContent = dataFormatada.substring(0,5);
-  if(document.getElementById("dataAtual")) document.getElementById("dataAtual").textContent = dataFormatada;
-
-  const btnDark = document.getElementById("toggleDarkMode");
-  if(btnDark) {
-    btnDark.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-    });
-  }
-}
-
-/* ===========================================================
-   LÓGICA DE DATAS E LOTE (ABAS LATERAIS)
-   =========================================================== */
-function popularSelectProdutos() {
-    const linha = seletorLinha.value;
-    const prods = dadosProducao[linha].produtos;
-    seletorProduto.innerHTML = "";
-    for (let chave in prods) {
-        let opt = document.createElement("option");
-        opt.value = chave; opt.textContent = prods[chave].label;
-        seletorProduto.appendChild(opt);
-    }
-    atualizarMaquinas();
-    atualizarCalculosDatas();
-}
-
-function atualizarMaquinas() {
-    const linha = seletorLinha.value;
-    seletorMaquina.innerHTML = "";
-    maquinasPorLinha[linha].forEach(m => {
-        let opt = document.createElement("option");
-        opt.value = m; opt.textContent = `Máquina ${m}`;
-        seletorMaquina.appendChild(opt);
-    });
-    gerarStringLote();
-}
-
-function calcularDiaJuliano(data) {
-    const inicio = new Date(data.getFullYear(), 0, 0);
-    const diff = data - inicio;
-    return Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(3, '0');
-}
-
-function atualizarCalculosDatas() {
-    const hoje = new Date();
-    const linhaVal = seletorLinha.value;
-    const prodVal = seletorProduto.value;
-    
-    if (!dadosProducao[linhaVal]?.produtos[prodVal]) return;
-    const info = dadosProducao[linhaVal].produtos[prodVal];
-
-    const julianaFormatada = calcularDiaJuliano(hoje);
-    if(dataJulianaSpan) dataJulianaSpan.textContent = julianaFormatada;
-
-    const dVal = new Date(hoje); dVal.setDate(hoje.getDate() + info.validade);
-    const dRet = new Date(hoje); dRet.setDate(hoje.getDate() + info.retirada);
-    const dEnv = new Date(hoje); dEnv.setDate(hoje.getDate() + info.envio); 
-    
-    if(dataHojeCompacta) dataHojeCompacta.textContent = hoje.toLocaleDateString("pt-BR");
-    if(document.getElementById("dataAtual")) document.getElementById("dataAtual").textContent = hoje.toLocaleDateString("pt-BR");
-    if(dataValidadeSpan) dataValidadeSpan.textContent = dVal.toLocaleDateString("pt-BR");
-    if(dataRetiradaSpan) dataRetiradaSpan.textContent = dRet.getDate().toString().padStart(2, '0') + " " + String(dRet.getMonth()+1).padStart(2, '0');
-    if(dataEnvioSpan) dataEnvioSpan.textContent = dEnv.getDate().toString().padStart(2, '0') + " " + String(dEnv.getMonth()+1).padStart(2, '0');
-    
-    gerarStringLote();
-}
-
-function gerarStringLote() {
-    const hoje = new Date();
-    const linhaVal = seletorLinha.value;
-    const prodVal = seletorProduto.value;
-    const unidade = seletorUnidade.value;
-    const maq = seletorMaquina.value;
-    
-    if (!dadosProducao[linhaVal]?.produtos[prodVal]) return;
-
-    const info = dadosProducao[linhaVal].produtos[prodVal];
-    const dVal = new Date(hoje); dVal.setDate(hoje.getDate() + info.validade);
-
-    const strVal = `VAL ${dVal.getDate().toString().padStart(2, '0')} ${mesesAbrev[dVal.getMonth()]} ${dVal.getFullYear().toString().slice(-2)}`;
-    const numLinha = linhaVal === "linha20k" ? "4" : (linhaVal === "linha3" ? "3" : "1");
-    
-    const juliana = calcularDiaJuliano(hoje); 
-    const hora = hoje.getHours().toString().padStart(2, '0') + hoje.getMinutes().toString().padStart(2, '0');
-    const strLote = `L${unidade}${numLinha}${juliana}${hora}${maq}`;
-
-    const dRet = new Date(hoje); dRet.setDate(hoje.getDate() + info.retirada);
-    const strRetiradaGrande = `DR ${dRet.getDate().toString().padStart(2, '0')}${String(dRet.getMonth()+1).padStart(2, '0')}`;
-    
-    const dEnv = new Date(hoje); dEnv.setDate(hoje.getDate() + info.envio);
-    const strEnvioGrande = `DE ${dEnv.getDate().toString().padStart(2, '0')}${String(dEnv.getMonth()+1).padStart(2, '0')}`;
-
-    if(loteLinhaSuperior) loteLinhaSuperior.textContent = strVal;
-    if(loteLinhaInferior) loteLinhaInferior.textContent = strLote;
-    if(loteRetiradaGrande) loteRetiradaGrande.textContent = strRetiradaGrande;
-    if(loteEnvioGrande) loteEnvioGrande.textContent = strEnvioGrande;
-}
-
-/* ===========================================================
-   RELÓGIO E EVENTOS
-   =========================================================== */
-let diaAtualNaMemoria = new Date().getDate();
-
-function atualizarRelogio() {
-    const agora = new Date();
-    const h = agora.toLocaleTimeString("pt-BR");
-    if(document.getElementById("horaEsquerda")) document.getElementById("horaEsquerda").textContent = h;
-    if(document.getElementById("horaDireita")) document.getElementById("horaDireita").textContent = h;
-    
-    if (agora.getDate() !== diaAtualNaMemoria) {
-        diaAtualNaMemoria = agora.getDate(); 
-        atualizarCalculosDatas(); 
-    }  
-    else if(agora.getSeconds() === 0) {
-        gerarStringLote(); 
-    }
-}
-setInterval(atualizarRelogio, 1000);
-
-if(seletorLinha) seletorLinha.addEventListener("change", popularSelectProdutos);
-if(seletorProduto) seletorProduto.addEventListener("change", atualizarCalculosDatas);
-if(seletorMaquina) seletorMaquina.addEventListener("change", generarStringLote);
-if(seletorUnidade) seletorUnidade.addEventListener("change", generarStringLote);
-
-if(abaData) {
-  abaData.addEventListener("click", (e) => {
-      if(e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
-      abaData.classList.toggle("expandida");
-  });
-}
-
-if(abaLote) {
-  abaLote.addEventListener("click", (e) => {
-      if(e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
-      abaLote.classList.toggle("expandida");
-      if (abaLote.classList.contains("expandida")) generarStringLote();
-  });
-}
-
-const btnDarkInit = document.getElementById('toggleDarkMode');
-if(btnDarkInit) {
-  btnDarkInit.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-  });
-}
-
-if(seletorLinha) popularSelectProdutos();
-atualizarRelogio();
-
+// Registro do Service Worker para a PWA funcionar offline na fábrica
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js")
