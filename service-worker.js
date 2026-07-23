@@ -1,4 +1,5 @@
-const CACHE_NAME = "lotes-cache-v3";
+// 1. Subimos para v4 para descartar a v3 e atualizar as imagens no cache
+const CACHE_NAME = "lotes-cache-v4";
 
 // Lista de arquivos essenciais salvos na memória local do dispositivo (Offline)
 const FILES_TO_CACHE = [
@@ -10,6 +11,8 @@ const FILES_TO_CACHE = [
   "./img/background.jfif",
   "./img/bimbo2.png",
   "./img/favicon.ico",
+  "./img/icon-192.png",
+  "./img/icon-512.png",
   // Fotos das embalagens dos produtos para o modo offline
   "./img/produtos/502642.png",
   "./img/produtos/500226.png",
@@ -23,13 +26,13 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener("install", event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log("Lotes PWA: Arquivos cacheados com sucesso!");
       return cache.addAll(FILES_TO_CACHE);
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
