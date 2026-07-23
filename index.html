@@ -11,6 +11,19 @@
 <body>
   <div class="watermark-background"></div>
 
+  <!-- TELA DE ABERTURA (SPLASH SCREEN RESPONSIVA) -->
+<div id="splash-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999999; font-family: system-ui, -apple-system, sans-serif; transition: opacity 0.5s ease-out; pointer-events: auto;">
+  <div style="text-align: center; color: #ffffff; padding: 20px; width: 100%; max-width: 500px;">
+    
+    <!-- ÍCONE RESPONSIVO -->
+    <img src="./img/icon-512.png" alt="Logo" style="width: min(40vw, 28vh); height: auto; max-width: 220px; object-fit: contain; margin: 0 auto 20px auto; display: block;">
+    
+    <!-- TÍTULO E SUBTÍTULO DO APP -->
+    <h1 style="font-size: clamp(1.4rem, 2.5vw, 2.2rem); font-weight: 800; color: #ffffff; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: -0.5px;">CONTROLE DE LOTES</h1>
+    <p style="font-size: clamp(0.85rem, 1.2vw, 1.1rem); color: #94a3b8; margin: 0; font-weight: 400;">Controle de Lotes de Insumos para Embalagem</p>
+  </div>
+</div>
+
   <div class="container">
     <h1>Controle de Lotes</h1>
     <h2>Rastreabilidade de Insumos</h2>
@@ -197,5 +210,23 @@
 
   <!-- O seu script de lógica principal -->
   <script src="script.js"></script>
+  <!-- SCRIPT AUTÔNOMO DA SPLASH SCREEN -->
+<script>
+  (function() {
+    function fecharSplash() {
+      var splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.style.opacity = '0';
+        splash.style.pointerEvents = 'none'; // Desativa cliques para não bloquear o app
+        setTimeout(function() {
+          splash.style.display = 'none';
+        }, 500);
+      }
+    }
+
+    // Executa o fechamento após 1.5 segundos
+    setTimeout(fecharSplash, 1500);
+  })();
+</script>
 </body>
 </html>
