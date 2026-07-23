@@ -1,4 +1,4 @@
-const CACHE_NAME = "lotes-cache-v2";
+const CACHE_NAME = "lotes-cache-v3";
 
 // Lista de arquivos essenciais salvos na memória local do dispositivo (Offline)
 const FILES_TO_CACHE = [
