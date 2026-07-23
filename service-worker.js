@@ -1,5 +1,5 @@
 // 1. Subimos para v4 para descartar a v3 e atualizar as imagens no cache
-const CACHE_NAME = "lotes-cache-v4";
+const CACHE_NAME = "lotes-cache-v5";
 
 // Lista de arquivos essenciais salvos na memória local do dispositivo (Offline)
 const FILES_TO_CACHE = [
